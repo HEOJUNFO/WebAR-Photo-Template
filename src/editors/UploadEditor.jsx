@@ -6,9 +6,6 @@ export default function UploadEditor({  onSettingChange }) {
         const file = event.target.files[0];
         
         if (file) {
-            const fileURL = URL.createObjectURL(file);
-
-        
             const fileMap = new Map();
             fileMap.set(file.name, file);
 
@@ -36,15 +33,11 @@ export default function UploadEditor({  onSettingChange }) {
         view(rootFile, rootPath, fileMap);
     };
 
-
     const view = (rootFile, rootPath, fileMap) => {
     
         const fileURL = typeof rootFile === 'string' ? rootFile : URL.createObjectURL(rootFile);
-
-        onSettingChange({ rootFile: rootFile, rootPath: rootPath, fileMap: fileMap })
-
-        if (typeof rootFile === 'object') URL.revokeObjectURL(fileURL);
-        
+        onSettingChange({ rootFile: fileURL, rootPath: rootPath, fileMap: fileMap })
+      
         return;
     }
  

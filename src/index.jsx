@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { createRoot } from "react-dom/client";
 import "./styles.css"; // Assuming this is where the provided CSS is
 import DiamondApp from "./apps/App";
@@ -35,7 +35,9 @@ function Main() {
     return (
         <div className="main-container" style={{ display: 'flex', width: '100%', height: '100%' }}>
             <div className="canvas-container" style={{ width: '80%', height: '100%' }}>
-            <SelectedApp settings={settings} />
+            <Suspense fallback={null}>
+             <SelectedApp settings={settings} />
+            </Suspense>
             </div>
             <div className="editor-container">
                 <div className="template-selector">

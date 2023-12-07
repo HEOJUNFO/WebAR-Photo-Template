@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { useMemo, useRef } from "react"
+import { Suspense, useMemo, useRef } from "react"
 import { Canvas, useThree, useFrame } from "@react-three/fiber"
 import { useGLTF,  MeshRefractionMaterial, CubeCamera } from "@react-three/drei"
 import { EffectComposer, Bloom, DepthOfField } from "@react-three/postprocessing"
@@ -72,8 +72,10 @@ export default function App({settings}) {
         gl.toneMappingExposure = Math.pow(2, 0)
         gl.punctualLights = true
       }}>
-      <CameraBackground/>
-      <Diamonds count={settings.diamondCount}/>
+  
+        <CameraBackground/>
+        <Diamonds count={settings.diamondCount}/>
+    
       <EffectComposer>
         <Bloom luminanceThreshold={0.8} luminanceSmoothing={0.1} intensity={0.1} levels={1} mipmapBlur={false} />
       </EffectComposer>

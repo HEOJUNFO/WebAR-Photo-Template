@@ -249,13 +249,6 @@ export class Viewer {
 
 		this.setCamera(DEFAULT_CAMERA);
 
-		this.axesCamera.position.copy(this.defaultCamera.position);
-		this.axesCamera.lookAt(this.axesScene.position);
-		this.axesCamera.near = size / 100;
-		this.axesCamera.far = size * 100;
-		this.axesCamera.updateProjectionMatrix();
-		this.axesCorner.scale.set(size, size, size);
-
 		this.controls.saveState();
 
 		this.scene.add(object);
@@ -274,17 +267,8 @@ export class Viewer {
 		this.updateLights();
 
 		this.updateEnvironment();
-		this.updateDisplay();
 
 		window.VIEWER.scene = this.content;
-
-		this.printGraph(this.content);
-	}
-
-	printGraph(node) {
-		console.group(' <' + node.type + '> ' + node.name);
-		node.children.forEach((child) => this.printGraph(child));
-		console.groupEnd();
 	}
 
 	/**
@@ -404,74 +388,6 @@ export class Viewer {
 				reject,
 			);
 		});
-	}
-
-	updateDisplay() {
-		if (this.skeletonHelpers.length) {
-			this.skeletonHelpers.forEach((helper) => this.scene.remove(helper));
-		}
-
-		traverseMaterials(this.content, (material) => {
-			material.wireframe = this.state.wireframe;
-
-			if (material instanceof PointsMaterial) {
-				material.size = this.state.pointSize;
-			}
-		});
-
-		this.content.traverse((node) => {
-			if (node.geometry && node.skeleton && this.state.skeleton) {
-				const helper = new SkeletonHelper(node.skeleton.bones[0].parent);
-				helper.material.linewidth = 3;
-				this.scene.add(helper);
-				this.skeletonHelpers.push(helper);
-			}
-		});
-
-		if (this.state.grid !== Boolean(this.gridHelper)) {
-			if (this.state.grid) {
-				this.gridHelper = new GridHelper();
-				this.axesHelper = new AxesHelper();
-				this.axesHelper.renderOrder = 999;
-				this.axesHelper.onBeforeRender = (renderer) => renderer.clearDepth();
-				this.scene.add(this.gridHelper);
-				this.scene.add(this.axesHelper);
-			} else {
-				this.scene.remove(this.gridHelper);
-				this.scene.remove(this.axesHelper);
-				this.gridHelper = null;
-				this.axesHelper = null;
-				this.axesRenderer.clear();
-			}
-		}
-
-		this.controls.autoRotate = this.state.autoRotate;
-	}
-
-	updateBackground() {
-		this.backgroundColor.set(this.state.bgColor);
-	}
-
-	addAxesHelper() {
-		this.axesDiv = document.createElement('div');
-		this.el.appendChild(this.axesDiv);
-		this.axesDiv.classList.add('axes');
-
-		const { clientWidth, clientHeight } = this.axesDiv;
-
-		this.axesScene = new Scene();
-		this.axesCamera = new PerspectiveCamera(50, clientWidth / clientHeight, 0.1, 10);
-		this.axesScene.add(this.axesCamera);
-
-		this.axesRenderer = new WebGLRenderer({ alpha: true });
-		this.axesRenderer.setPixelRatio(window.devicePixelRatio);
-		this.axesRenderer.setSize(this.axesDiv.clientWidth, this.axesDiv.clientHeight);
-
-		this.axesCamera.up = this.defaultCamera.up;
-
-		this.axesCorner = new AxesHelper(5);
-		this.axesScene.add(this.axesCorner);
-		this.axesDiv.appendChild(this.axesRenderer.domElement);
 	}
 
 	clear() {

@@ -20,11 +20,11 @@ import {
 } from 'three';
 import React, { useEffect, useState, useRef,useMemo } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
@@ -71,8 +71,10 @@ export default function App({settings}) {
   const fov =  60;
 	const aspect = window.innerWidth / window.innerHeight;
 
-  const {defaultCamera} = useRef(new PerspectiveCamera(fov, aspect, 0.01, 1000));
-  const {activeCamera} = useRef(defaultCamera);
+  const[camera,setCamera] = useState(new PerspectiveCamera(fov, aspect, 0.01, 1000));
+  const orbitControls = useRef();
+
+  orbitControls.screenSpacePannig = true;
 
   const {renderer} = useRef(new WebGLRenderer({ antialias: true }));
   return (
@@ -80,20 +82,21 @@ export default function App({settings}) {
      <Canvas
         concurrent="true"
         gl={renderer}
-        camera={defaultCamera}
+        camera={camera}
         onCreated={({ gl }) => {
           gl.setPixelRatio(window.devicePixelRatio);
           gl.toneMapping = LinearToneMapping;
           gl.outputColorSpace = SRGBColorSpace;
         }}
-      > <Viewer setting={settings} state={state} />
+      > <Viewer setting={settings} state={state} camera={camera}  />
       <CameraBackground />
+      <OrbitControls ref={orbitControls} camera={camera}/> 
     </Canvas>
     </>
   )
 }
 
-function Viewer({ setting,state }) {
+function Viewer({ setting,state, camera,setCamera }) {
   const { gl, scene } = useThree();
 
   const neutralEnvironment = useMemo(() => {
@@ -120,13 +123,12 @@ function Viewer({ setting,state }) {
           position={[0, 0, 100]}
           castShadow
         /> 
-        {setting.rootFile && <Load url={setting.rootFile} rootPath={setting.rootPath} assetMap={setting.fileMap} />}
-       
+        {setting.rootFile && <Load url={setting.rootFile} rootPath={setting.rootPath} assetMap={setting.fileMap} camera={camera} />}
     </>
   )
 }
 
-function Load({url,rootPath, assetMap}) {
+function Load({url,rootPath, assetMap,camera, setCamera}) {
   const [light, setLight] = useState([]);
   const [content, setContent] = useState(null);
   const [mixer, setMixer] = useState(null);
@@ -188,18 +190,36 @@ function Load({url,rootPath, assetMap}) {
   },[assetMap, baseURL, rootPath]);
 
   return <>
-  {object !== null &&<SetContent object={object} clip={clips} />}
+  {object !== null &&<SetContent object={object} clip={clips} camera={camera} />}
  </>
 }
 
-function SetContent({object,clip}){
-  console.log(object);
+function SetContent({object,clip,camera}){
+  object.updateMatrixWorld();
+
+  const box = new Box3().setFromObject(object);
+  const size = box.getSize(new Vector3()).length();
+  const center = box.getCenter(new Vector3());
+
+  object.position.x += object.position.x - center.x;
+  object.position.y += object.position.y - center.y;
+  object.position.z += object.position.z - center.z;
+
+  camera.near = size / 100;
+  camera.far = size * 100;
+  camera.updateProjectionMatrix();
+
+  camera.position.copy(center);
+  camera.position.x += size / 1.0;
+  camera.position.y += size / 2.5;
+  camera.position.z += size / 1.0;
+  camera.lookAt(center);
 
   return <>
-  <primitive object={object} />
-  </>
-  
+    <primitive object={object} />
+  </> 
 }
+
 
 
 

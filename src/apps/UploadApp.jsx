@@ -1,26 +1,19 @@
 import {
-	AmbientLight,
-	AnimationMixer,
 	Box3,
 	Cache,
-	Color,
-	DirectionalLight,
-	HemisphereLight,
 	LoaderUtils,
 	LoadingManager,
 	PMREMGenerator,
 	PerspectiveCamera,
-	PointsMaterial,
 	REVISION,
 	Vector3,
 	WebGLRenderer,
 	LinearToneMapping,
-	ACESFilmicToneMapping,
   SRGBColorSpace
 } from 'three';
 import React, { useEffect, useState, useRef,useMemo } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useAnimations } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
@@ -195,6 +188,15 @@ function Load({url,rootPath, assetMap,camera, setCamera}) {
 }
 
 function SetContent({object,clip,camera}){
+  const { actions } = useAnimations(clip, object);
+
+  useEffect(() => {
+
+    Object.values(actions).forEach(action => action.play());
+ 
+  }, [actions]);
+
+
   object.updateMatrixWorld();
 
   const box = new Box3().setFromObject(object);
@@ -227,6 +229,5 @@ function isIOS() {
   return (
       /iPad|iPhone|iPod/.test(navigator.userAgent) ||
       (navigator.userAgent.includes('Mac') && 'ontouchend' in document)
-
   );
 }

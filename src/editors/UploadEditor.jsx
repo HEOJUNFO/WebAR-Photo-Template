@@ -29,7 +29,7 @@ export default function UploadEditor({  onSettingChange }) {
             console.log('No .gltf or .glb asset found.');
             return;
         }
-
+        
         view(rootFile, rootPath, fileMap);
     };
 
@@ -37,11 +37,8 @@ export default function UploadEditor({  onSettingChange }) {
     
         const fileURL = typeof rootFile === 'string' ? rootFile : URL.createObjectURL(rootFile);
         onSettingChange({ rootFile: fileURL, rootPath: rootPath, fileMap: fileMap })
-      
         return;
     }
- 
-
   return (
    
     <div className="setting-item">

@@ -11,7 +11,6 @@ function Main() {
     const [settings, setSettings] = useState({});
     const [selectedTemplate, setSelectedTemplate] = useState("diamond"); 
 
-  
     const handleSettingChange = (newSetting) => {
         setSettings({ ...settings, ...newSetting });
     };

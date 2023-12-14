@@ -173,9 +173,6 @@ function Load({url,rootPath, assetMap,camera, setCamera}) {
         setClips(clips);
       
         blobURLs.forEach(URL.revokeObjectURL);
-
-       
-    
       },
       undefined,
       (e) => console.error(e),
@@ -195,7 +192,6 @@ function SetContent({object,clip,camera}){
     Object.values(actions).forEach(action => action.play());
  
   }, [actions]);
-
 
   object.updateMatrixWorld();
 

@@ -9,17 +9,18 @@ import {
 	Vector3,
 	WebGLRenderer,
 	LinearToneMapping,
-  SRGBColorSpace
+  SRGBColorSpace,
 } from 'three';
 import React, { useEffect, useState, useRef,useMemo } from 'react';
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { OrbitControls, useAnimations } from '@react-three/drei';
+import { OrbitControls, useAnimations, TransformControls } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { proxy, useSnapshot } from 'valtio'
 
 import { environments } from '../environments.js';
 
@@ -43,6 +44,8 @@ const Preset = { ASSET_GENERATOR: 'assetgenerator' };
 
 Cache.enabled = true;
 
+const modes = ['translate', 'rotate', 'scale']
+const state = proxy({ current: null, mode: 0 })
 
 export default function App({settings}) {
   const [state, setState] = useState({
@@ -67,8 +70,6 @@ export default function App({settings}) {
   const[camera,setCamera] = useState(new PerspectiveCamera(fov, aspect, 0.01, 1000));
   const orbitControls = useRef();
 
-  orbitControls.screenSpacePannig = true;
-
   const {renderer} = useRef(new WebGLRenderer({ antialias: true }));
   return (
    <>
@@ -80,16 +81,16 @@ export default function App({settings}) {
           gl.setPixelRatio(window.devicePixelRatio);
           gl.toneMapping = LinearToneMapping;
           gl.outputColorSpace = SRGBColorSpace;
-        }}
-      > <Viewer setting={settings} state={state} camera={camera}  />
+        }}> 
+      <Viewer setting={settings} state={state} camera={camera} orbitControls={orbitControls}  />
       <CameraBackground />
-      <OrbitControls ref={orbitControls} camera={camera}/> 
+      <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.75} ref={orbitControls} />
     </Canvas>
     </>
   )
 }
 
-function Viewer({ setting,state, camera,setCamera }) {
+function Viewer({ setting,state, camera, orbitControls }) {
   const { gl, scene } = useThree();
 
   const neutralEnvironment = useMemo(() => {
@@ -114,14 +115,13 @@ function Viewer({ setting,state, camera,setCamera }) {
           intensity={state.directIntensity}
           color={state.directColor}
           position={[0, 0, 100]}
-          castShadow
-        /> 
-        {setting.rootFile && <Load url={setting.rootFile} rootPath={setting.rootPath} assetMap={setting.fileMap} camera={camera} />}
+          castShadow /> 
+        {setting.rootFile && <Load url={setting.rootFile} rootPath={setting.rootPath} assetMap={setting.fileMap} camera={camera} orbitControls={orbitControls}/>}
     </>
   )
 }
 
-function Load({url,rootPath, assetMap,camera, setCamera}) {
+function Load({url,rootPath, assetMap,camera, orbitControls}) {
   const [light, setLight] = useState([]);
   const [content, setContent] = useState(null);
   const [mixer, setMixer] = useState(null);
@@ -180,12 +180,13 @@ function Load({url,rootPath, assetMap,camera, setCamera}) {
   },[assetMap, baseURL, rootPath]);
 
   return <>
-  {object !== null &&<SetContent object={object} clip={clips} camera={camera} />}
+  {object !== null &&<SetContent object={object} clip={clips} camera={camera} orbitControls={orbitControls} name="model"/>}
  </>
 }
 
-function SetContent({object,clip,camera}){
+function SetContent({object,clip,camera, orbitControls,name}){
   const { actions } = useAnimations(clip, object);
+  const snap = useSnapshot(state)
 
   useEffect(() => {
 
@@ -193,33 +194,33 @@ function SetContent({object,clip,camera}){
  
   }, [actions]);
 
-  object.updateMatrixWorld();
-
-  const box = new Box3().setFromObject(object);
-  const size = box.getSize(new Vector3()).length();
-  const center = box.getCenter(new Vector3());
-
-  object.position.x += object.position.x - center.x;
-  object.position.y += object.position.y - center.y;
-  object.position.z += object.position.z - center.z;
-
-  camera.near = size / 100;
-  camera.far = size * 100;
-  camera.updateProjectionMatrix();
-
-  camera.position.copy(center);
-  camera.position.x += size / 1.0;
-  camera.position.y += size / 2.5;
-  camera.position.z += size / 1.0;
-  camera.lookAt(center);
+  useEffect(() => {
+    object.updateMatrixWorld();
+  
+    const box = new Box3().setFromObject(object);
+    const size = box.getSize(new Vector3()).length();
+    const center = box.getCenter(new Vector3());
+  
+    object.position.x += object.position.x - center.x;
+    object.position.y += object.position.y - center.y;
+    object.position.z += object.position.z - center.z;
+  
+    camera.near = size / 100;
+    camera.far = size * 100;
+    camera.updateProjectionMatrix();
+  
+    camera.position.copy(center);
+    camera.position.x += size / 1.0;
+    camera.position.y += size / 2.5;
+    camera.position.z += size / 1.0;
+    camera.lookAt(center);
+  }, []);
 
   return <>
-    <primitive object={object} />
+  <primitive object={object} onClick={(e) => (e.stopPropagation(), (state.current = name))} onPointerMissed={(e) => e.type === 'click' && (state.current = null)} onContextMenu={(e) => snap.current === name && (e.stopPropagation(), (state.mode = (snap.mode + 1) % modes.length))} name={name} />
+  {snap.current &&<TransformControls object={object}  mode={modes[snap.mode]}/>}
   </> 
 }
-
-
-
 
 function isIOS() {
   return (

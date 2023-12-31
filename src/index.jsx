@@ -5,6 +5,7 @@ import DiamondApp from "./apps/App";
 import UploadApp from "./apps/UploadApp";
 import DiamondEditor from './editors/DiamondEditor';
 import UploadEditor from './editors/UploadEditor';
+import { useDetectGPU } from '@react-three/drei';
 
 
 function Main() {
@@ -31,12 +32,15 @@ function Main() {
     };
     const SelectedEditor = editorComponents[selectedTemplate];
 
+    const GPUTier = useDetectGPU()
+
     return (
         <div className="main-container" style={{ display: 'flex', width: '100%', height: '100%' }}>
             <div className="canvas-container" style={{ width: '80%', height: '100%' }}>
+            {GPUTier.tier === "0" || GPUTier.isMobile ? <div>지원하지 않는 GPU입니다.</div> :
             <Suspense fallback={null}>
              <SelectedApp settings={settings} />
-            </Suspense>
+            </Suspense> }
             </div>
             <div className="editor-container">
                 <div className="template-selector">
